@@ -47,7 +47,6 @@ def add_event():
     return jsonify({'message': '이벤트가 추가되었습니다.'})
 
 
-
 @app.route('/')
 def index():
     return '서버가 정상적으로 작동 중입니다!'
@@ -86,6 +85,7 @@ def login():
     else:
         return jsonify({'message': '사용자 이름 또는 비밀번호가 잘못되었습니다.'}), 400
 
+# 이벤트 조회
 @app.route('/events', methods=['GET'])
 def get_events():
     conn = connect_db()
@@ -96,6 +96,7 @@ def get_events():
     
     return jsonify({'events': [dict(event) for event in events]}), 200
 
+# 티켓 예약
 @app.route('/reserve', methods=['POST'])
 def reserve_ticket():
     data = request.json
@@ -117,6 +118,7 @@ def reserve_ticket():
         conn.close()
         return jsonify({'message': '이벤트 예약이 불가능합니다.'}), 400
 
+# 예약 목록 조회
 @app.route('/reservations', methods=['GET'])
 def get_reservations():
     conn = connect_db()
@@ -126,6 +128,17 @@ def get_reservations():
     conn.close()
     
     return jsonify({'reservations': [dict(res) for res in reservations]}), 200
+
+# 사용자 목록 조회 (추가된 부분)
+@app.route('/users', methods=['GET'])
+def get_users():
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, username FROM users')
+    users = cursor.fetchall()
+    conn.close()
+    
+    return jsonify({'users': [{'id': user[0], 'username': user[1]} for user in users]}), 200
 
 if __name__ == '__main__':
     init_db()
