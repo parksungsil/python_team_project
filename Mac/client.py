@@ -15,7 +15,10 @@ logging.basicConfig(filename='client_activity.log', level=logging.INFO, format='
 # CLI 메뉴 함수
 def main_menu():
     while True:
-        print("\n1. 사용자 등록\n2. 로그인\n3. 로그아웃\n4. 이벤트 조회\n5. 이벤트 생성 (관리자)\n6. 티켓 예약\n7. 티켓 예약 취소\n8. 예약 현황 조회\n9. 종료")
+        print("\n1. 사용자 등록\n2. 로그인\n3. 로그아웃\n4. 이벤트 조회")
+        if is_admin:
+            print("5. 이벤트 생성 (관리자)\n6. 사용자 정보 삭제 (관리자)\n7. 이벤트 삭제 (관리자)\n8. 사용자 목록 조회 (관리자)")
+        print("9. 티켓 예약\n10. 티켓 예약 취소\n11. 예약 현황 조회\n12. 종료")
         choice = input("원하는 기능의 번호를 입력하세요: ")
 
         if choice == '1':
@@ -26,15 +29,21 @@ def main_menu():
             logout_user()
         elif choice == '4':
             get_events()
-        elif choice == '5':
+        elif is_admin and choice == '5':
             create_event()
-        elif choice == '6':
-            reserve_ticket()
-        elif choice == '7':
-            cancel_reservation()
-        elif choice == '8':
-            get_my_reservations()
+        elif is_admin and choice == '6':
+            delete_user()
+        elif is_admin and choice == '7':
+            delete_event()
+        elif is_admin and choice == '8':
+            get_users()
         elif choice == '9':
+            reserve_ticket()
+        elif choice == '10':
+            cancel_reservation()
+        elif choice == '11':
+            get_my_reservations()
+        elif choice == '12':
             break
         else:
             print("잘못된 입력입니다. 다시 시도하세요.")
@@ -60,7 +69,7 @@ def register_user():
         print("사용자 등록 실패:", e)
         logging.error(f"사용자 등록 실패: {e}")
 
-# 사용자 로그인 수정
+# 사용자 로그인
 def login_user():
     global token, is_admin
     username = input("사용자 이름을 입력하세요: ")
@@ -84,7 +93,6 @@ def login_user():
     except requests.RequestException as e:
         print("로그인 실패:", e)
         logging.error(f"로그인 실패: {e}")
-
 
 # 사용자 로그아웃
 def logout_user():
@@ -140,6 +148,77 @@ def create_event():
     except requests.RequestException as e:
         print("이벤트 생성 실패:", e)
         logging.error(f"이벤트 생성 실패: {e}")
+
+# 사용자 목록 조회 (관리자)
+def get_users():
+    if not token:
+        print("먼저 로그인하세요.")
+        return
+    if not is_admin:
+        print("이 기능은 관리자만 사용할 수 있습니다.")
+        return
+    
+    try:
+        response = requests.get(f"{BASE_URL}/users", cookies={"session": token})
+        users = response.json().get("users", [])
+        if users:
+            print("\n사용자 목록:")
+            for user in users:
+                print(f"ID: {user['id']}, 이름: {user['username']}, 관리자 여부: {'예' if user['is_admin'] else '아니오'}")
+        else:
+            print("등록된 사용자가 없습니다.")
+        logging.info("사용자 목록 조회 - 성공")
+    except requests.RequestException as e:
+        print("사용자 목록 조회 실패:", e)
+        logging.error(f"사용자 목록 조회 실패: {e}")
+
+# 사용자 정보 삭제 (관리자)
+def delete_user():
+    if not token:
+        print("먼저 로그인하세요.")
+        return
+    if not is_admin:
+        print("이 기능은 관리자만 사용할 수 있습니다.")
+        return
+
+    # 사용자 목록을 보여줌으로써 정확한 ID를 입력할 수 있도록 도움
+    get_users()
+
+    user_id = input("삭제할 사용자 ID를 입력하세요: ")
+    try:
+        response = requests.delete(f"{BASE_URL}/users/{user_id}", cookies={"session": token})
+        if response.status_code == 200:
+            message = response.json().get("message", "사용자 정보 삭제에 성공했습니다.")
+            print(message)
+            logging.info(f"사용자 삭제: ID {user_id} - {message}")
+        elif response.status_code == 404:
+            print("삭제할 사용자를 찾을 수 없습니다.")
+            logging.warning(f"사용자 삭제 실패: ID {user_id} - 사용자 없음")
+        else:
+            print("사용자 정보 삭제 실패:", response.json().get("message", "알 수 없는 오류가 발생했습니다."))
+            logging.error(f"사용자 정보 삭제 실패: ID {user_id} - {response.status_code}")
+    except requests.RequestException as e:
+        print("사용자 정보 삭제 실패:", e)
+        logging.error(f"사용자 정보 삭제 실패: {e}")
+
+# 이벤트 삭제 (관리자)
+def delete_event():
+    if not token:
+        print("먼저 로그인하세요.")
+        return
+    if not is_admin:
+        print("이 기능은 관리자만 사용할 수 있습니다.")
+        return
+    
+    event_id = input("삭제할 이벤트 ID를 입력하세요: ")
+    try:
+        response = requests.delete(f"{BASE_URL}/events/{event_id}", cookies={"session": token})
+        message = response.json().get("message", "이벤트 삭제에 성공했습니다.")
+        print(message)
+        logging.info(f"이벤트 삭제: ID {event_id} - {message}")
+    except requests.RequestException as e:
+        print("이벤트 삭제 실패:", e)
+        logging.error(f"이벤트 삭제 실패: {e}")
 
 # 티켓 예약
 def reserve_ticket():
