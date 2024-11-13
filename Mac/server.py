@@ -63,3 +63,7 @@ def get_users():
 if __name__ == '__main__':
     init_db()
     app.run(debug=True)
+
+@app.route('/', methods=['GET'])
+def home():
+    return "Welcome to the Flask server! This is the home page.", 200
