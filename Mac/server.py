@@ -5,7 +5,7 @@ import sqlite3
 app = Flask(__name__)
 
 def connect_db():
-    return sqlite3.connect('database.db')
+    return sqlite3.connect('events.db')
 
 def init_db():
     conn = connect_db()
