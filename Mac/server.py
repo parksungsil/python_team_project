@@ -84,7 +84,7 @@ def register():
     
     return jsonify({'message': '사용자가 성공적으로 등록되었습니다.'}), 201
 
-# 사용자 로그인
+# 로그인 엔드포인트 수정
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
@@ -100,7 +100,7 @@ def login():
     if user and bcrypt.check_password_hash(user['password'], password):
         session['user_id'] = user['id']
         session['is_admin'] = user['is_admin']
-        return jsonify({'message': '로그인에 성공했습니다.'}), 200
+        return jsonify({'message': '로그인에 성공했습니다.', 'is_admin': user['is_admin']}), 200
     else:
         return jsonify({'message': '사용자 이름 또는 비밀번호가 잘못되었습니다.'}), 401
 

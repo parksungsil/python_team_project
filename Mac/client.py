@@ -7,6 +7,7 @@ BASE_URL = "http://127.0.0.1:5000"
 
 # 로그인 상태 유지
 token = None
+is_admin = False
 
 # 로그 설정
 logging.basicConfig(filename='client_activity.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -59,9 +60,9 @@ def register_user():
         print("사용자 등록 실패:", e)
         logging.error(f"사용자 등록 실패: {e}")
 
-# 사용자 로그인
+# 사용자 로그인 수정
 def login_user():
-    global token
+    global token, is_admin
     username = input("사용자 이름을 입력하세요: ")
     password = input("비밀번호를 입력하세요: ")
     
@@ -74,6 +75,7 @@ def login_user():
         if response.status_code == 200:
             print(response.json().get("message", "로그인에 성공했습니다."))
             token = response.cookies.get('session')  # 세션 토큰 저장
+            is_admin = response.json().get('is_admin', 0) == 1  # 관리자 여부 저장
             logging.info(f"사용자 로그인: {username} - 성공")
         else:
             message = response.json().get("message", "로그인 실패")
@@ -83,15 +85,17 @@ def login_user():
         print("로그인 실패:", e)
         logging.error(f"로그인 실패: {e}")
 
+
 # 사용자 로그아웃
 def logout_user():
-    global token
+    global token, is_admin
     try:
         response = requests.post(f"{BASE_URL}/logout", cookies={"session": token})
         message = response.json().get("message", "로그아웃되었습니다.")
         print(message)
         logging.info("사용자 로그아웃 - 성공")
         token = None
+        is_admin = False
     except requests.RequestException as e:
         print("로그아웃 실패:", e)
         logging.error(f"로그아웃 실패: {e}")
@@ -116,6 +120,9 @@ def get_events():
 def create_event():
     if not token:
         print("먼저 로그인하세요.")
+        return
+    if not is_admin:
+        print("이 기능은 관리자만 사용할 수 있습니다.")
         return
     
     name = input("이벤트 이름을 입력하세요: ")
